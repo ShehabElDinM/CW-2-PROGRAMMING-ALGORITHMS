@@ -4,6 +4,10 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <cstring>
+#include <fstream>
+#include <sstream>
+#include <thread>
 
 
 using namespace std;
@@ -40,4 +44,43 @@ string Encryption(const string& message, int shift) {
 
 string Decryption(const string& message, int shift) {
     return Encryption(message, 26 - shift);
+}
+
+void Broadcast_M(const string& message, int sender_socket) {
+
+    string encrypted_message = Encryption(message, 3);
+
+    ofstream outfile("User_Messages.txt", ios::app); 
+    outfile << encrypted_message << endl;
+
+    outfile.close();
+    for (int i = 0; i < NUM_USERS; ++i) {
+        if (users[i].socket != 0 && users[i].socket != sender_socket) {
+            send(users[i].socket, encrypted_message.c_str(), encrypted_message.length(), 0);
+        }
+    }
+}
+
+bool Authenticate_C(int user_socket) {
+    char buffer[1024] = {0};
+
+    if (recv(user_socket, buffer, 1024, 0) <= 0) {
+        return false;
+    }
+    string received_credentials(buffer);
+
+    string decrypted_credentials = Decryption(received_credentials, 3);
+
+    ifstream infile("User_Credential.txt");
+    string line;
+    while (getline(infile, line)) {
+        istringstream iss(line);
+        string stored_username;
+        string stored_password;
+        if (!(iss >> stored_username >> stored_password)) { break; }
+        if (decrypted_credentials == (stored_username + " " + stored_password)) {
+            return true;
+        }
+    }
+    return false;
 }
