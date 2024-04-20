@@ -84,3 +84,30 @@ bool Authenticate_C(int user_socket) {
     }
     return false;
 }
+
+void Handle_Client(int user_socket, const string& user_address) {
+    Log("Connection from: " + user_address);
+
+
+    if (!Authenticate_C(user_socket)) {
+        Log("Authentication failed for client: " + user_address);
+        close(user_socket);
+        return;
+    }
+
+    Log("Authentication successful for client: " + user_address);
+
+    char buffer[1024] = {0};
+    while (true) {
+        int valread = recv(user_socket, buffer, 1024, 0);
+        if (valread <= 0) {
+            break;
+        }
+        string message(buffer);
+        Broadcast_M(message, user_socket);
+        memset(buffer, 0, sizeof(buffer));
+    }
+
+    close(user_socket);
+    Log("Connection with client: " + user_address + " closed");
+}
