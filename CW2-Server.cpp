@@ -24,3 +24,20 @@ int num_clients = 0;
 void Log(const string& message) {
     cout << message << endl;
 }
+
+string Encryption(const string& message, int shift) {
+    string result = "";
+    for (char c : message) {
+        if (isalpha(c)) {
+            char base = isupper(c) ? 'A' : 'a';
+            result += (c - base + shift) % 26 + base;
+        } else {
+            result += c;
+        }
+    }
+    return result;
+}
+
+string Decryption(const string& message, int shift) {
+    return Encryption(message, 26 - shift);
+}
