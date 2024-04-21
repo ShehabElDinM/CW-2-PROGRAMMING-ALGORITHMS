@@ -1,3 +1,4 @@
+// Libraries utilized
 #include <iostream>
 #include <unistd.h>
 #include <sys/types.h>
@@ -11,10 +12,12 @@
 
 using namespace std;
 
+// Outputting the Client Logs
 void log(const string& message) {
     cout << message << endl;
 }
 
+// Function used to encrypt user messages with caeser cipher
 string Encrypt(const string& message, int shift) {
     string result = "";
     for (char c : message) {
@@ -28,10 +31,12 @@ string Encrypt(const string& message, int shift) {
     return result;
 }
 
+// Function used to decrypt user messages encrypted with caeser cipher
 string Decrypt(const string& message, int shift) {
     return Encrypt(message, 26 - shift);
 }
 
+// Function used to send the credentials of the user to the server for authentication
 bool Auth(int server_socket) {
     char username[1024];
     char password[1024];
@@ -44,8 +49,10 @@ bool Auth(int server_socket) {
 
     string credentials = string(username) + " " + string(password);
 
+    // Encrypting the user credentials using Caesar cipher
     string encrypted_credentials = Encrypt(credentials, 3);
 
+    // Sending the encrypted credentials to the server
     if (send(server_socket, encrypted_credentials.c_str(), encrypted_credentials.length(), 0) == -1) {
         log("Send failed");
         return false;
@@ -54,6 +61,7 @@ bool Auth(int server_socket) {
     return true;
 }
 
+// Function to receive and display messages from server
 void* Receive(void* arg) {
     int server_socket = *((int*)arg);
     char buffer[1024] = {0};
@@ -63,9 +71,11 @@ void* Receive(void* arg) {
             log("Receive failed");
             break;
         }
+        // Decrypt received message using Caesar cipher with a shift value of 3
         string decrypted_message = Decrypt(buffer, 3);
         cout << "server: " << decrypted_message << endl;
 
+        // Clear the buffer for the next message
         memset(buffer, 0, sizeof(buffer));
     }
     return NULL;
