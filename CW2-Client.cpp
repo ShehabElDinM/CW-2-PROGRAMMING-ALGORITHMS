@@ -70,3 +70,71 @@ void* Receive(void* arg) {
     }
     return NULL;
 }
+
+int main() {
+    int client_socket;
+    struct sockaddr_in server_info;
+
+    // Create client socket
+    client_socket = socket(AF_INET, SOCK_STREAM, 0);
+    if (client_socket == -1) {
+        log("Socket creation failed");
+        return 1;
+    }
+
+    // Server address configuration
+    server_info.sin_family = AF_INET;
+    server_info.sin_port = htons(9999);
+
+    if (inet_pton(AF_INET, "127.0.0.1", &server_info.sin_addr) <= 0) {
+        log("Invalid address");
+        return 1;
+    }
+
+    // Establishing a connection with the Server
+    if (connect(client_socket, (struct sockaddr *)&server_info, sizeof(server_info)) < 0) {
+        log("Connection failed");
+        return 1;
+    }
+
+    // Authenticating credentials with the server
+    if (!Auth(client_socket)) {
+        log("Authentication failed");
+        close(client_socket);
+        return 1;
+    }
+
+    log("Authentication successful");
+
+    // Starting a new thread to receive messages from the server
+    pthread_t receive_thread;
+    if (pthread_create(&receive_thread, NULL, Receive, (void*)&client_socket) != 0) {
+        log("Failed to create receive thread");
+        close(client_socket);
+        return 1;
+    }
+
+    char buffer[1024] = {0};
+    while (true) {
+        string message;
+
+        // Read a line of input from the user
+        getline(cin, message); 
+        if (message.empty()) {
+            continue;
+        }
+
+        // Send message to server
+        if (send(client_socket, message.c_str(), message.length(), 0) == -1) {
+            log("Send failed");
+            break;
+        }
+    }
+
+    // Joining the receive thread
+    pthread_join(receive_thread, NULL);
+
+    // Close client socket
+    close(client_socket);
+    return 0;
+}
