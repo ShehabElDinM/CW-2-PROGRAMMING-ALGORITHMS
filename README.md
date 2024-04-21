@@ -1,2 +1,3 @@
 # CW-2 PROGRAMMING&ALGORITHMS
- 
+ The secure chat application prioritizes user privacy and data integrity, boasting robust encryption and stringent user authentication measures. With end-to-end encryption ensuring the confidentiality of messages, only authorized users can securely access and transmit data. Designed with user-friendliness as a paramount concern, the application provides a dependable platform for communication, safeguarding the privacy and integrity of conversations. Developed with meticulous attention to security considerations, the chat app offers users a reliable solution for confidential communication.
+---
