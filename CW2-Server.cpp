@@ -1,3 +1,4 @@
+// Libraries utilized
 #include <iostream>
 #include <unistd.h>
 #include <sys/types.h>
@@ -9,25 +10,29 @@
 #include <sstream>
 #include <thread>
 
-
-
 using namespace std;
 
+// Maximum number of clients
 constexpr int NUM_USERS = 100;
 
+// Constructer used to encapsulate the information about each connected user
 struct User_Info {
     int socket;
     bool authenticated;
 };
 
+// Storing user information in an array
 User_Info users[NUM_USERS];
 
+// Implementation of a counter in order to keep track of the users connected to the server
 int num_clients = 0;
 
+// Outputting the Server Logs
 void Log(const string& message) {
     cout << message << endl;
 }
 
+// Outputting the Server Logs
 string Encryption(const string& message, int shift) {
     string result = "";
     for (char c : message) {
@@ -41,17 +46,22 @@ string Encryption(const string& message, int shift) {
     return result;
 }
 
+// Function used to decrypt user messages encrypted with caeser cipher
 string Decryption(const string& message, int shift) {
     return Encryption(message, 26 - shift);
 }
 
+// Function used to broadcast message to all clients except the sender
 void Broadcast_M(const string& message, int sender_socket) {
 
+    // Encrypting the message with a shift value of 3
     string encrypted_message = Encryption(message, 3);
 
+    // writing the encrypted message in the user_messages.txt file 
     ofstream outfile("User_Messages.txt", ios::app); 
     outfile << encrypted_message << endl;
 
+    // closing the file
     outfile.close();
     for (int i = 0; i < NUM_USERS; ++i) {
         if (users[i].socket != 0 && users[i].socket != sender_socket) {
@@ -60,22 +70,29 @@ void Broadcast_M(const string& message, int sender_socket) {
     }
 }
 
+// Function used to authenticate clients (users)
 bool Authenticate_C(int user_socket) {
     char buffer[1024] = {0};
 
+    // Receive username
     if (recv(user_socket, buffer, 1024, 0) <= 0) {
         return false;
     }
     string received_credentials(buffer);
 
+
+    // Decrypt the received credentials from the users using a shift value of 3
     string decrypted_credentials = Decryption(received_credentials, 3);
 
+
+    // Check if credentials match those in the file
     ifstream infile("User_Credential.txt");
     string line;
     while (getline(infile, line)) {
         istringstream iss(line);
         string stored_username;
         string stored_password;
+        // If the user is not found then break
         if (!(iss >> stored_username >> stored_password)) { break; }
         if (decrypted_credentials == (stored_username + " " + stored_password)) {
             return true;
@@ -84,6 +101,7 @@ bool Authenticate_C(int user_socket) {
     return false;
 }
 
+// Function used to handle user connections
 void Handle_Client(int user_socket, const string& user_address) {
     Log("Connection from: " + user_address);
 
@@ -107,6 +125,7 @@ void Handle_Client(int user_socket, const string& user_address) {
         memset(buffer, 0, sizeof(buffer));
     }
 
+    // Close client socket
     close(user_socket);
     Log("Connection with client: " + user_address + " closed");
 }
