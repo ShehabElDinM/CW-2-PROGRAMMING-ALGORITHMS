@@ -111,3 +111,81 @@ void Handle_Client(int user_socket, const string& user_address) {
     close(user_socket);
     Log("Connection with client: " + user_address + " closed");
 }
+
+int main() {
+    int server_socket;
+    struct sockaddr_in server_info;
+
+    // Create server socket
+    server_socket = socket(AF_INET, SOCK_STREAM, 0);
+    if (server_socket == -1) {
+        Log("Socket creation failed");
+        return 1;
+    }
+
+    // Server address configuration
+    server_info.sin_family = AF_INET;
+    server_info.sin_addr.s_addr = INADDR_ANY;
+    server_info.sin_port = htons(9999);
+
+    // Bind server socket
+    if (bind(server_socket, (struct sockaddr *)&server_info, sizeof(server_info)) < 0) {
+        Log("Binding failed");
+        return 1;
+    }
+
+    //  Start listening on port 9999
+    listen(server_socket, 5);
+    Log("Server listening on port 9999");
+
+    while (true) {
+        int user_socket;
+        struct sockaddr_in user_address;
+        socklen_t user_addrlen = sizeof(user_address);
+
+        // Accept incoming connection
+        user_socket = accept(server_socket, (struct sockaddr *)&user_address, &user_addrlen);
+        if (user_socket < 0) {
+            Log("Acceptance failed");
+            continue;
+        }
+
+        // Check if maximum number of clients reached
+        if (num_clients >= NUM_USERS) {
+            Log("Maximum number of clients reached. Connection rejected.");
+            close(user_socket);
+            continue;
+        }
+
+        // Finding a free slot for the user
+        int free_index = -1;
+        for (int i = 0; i < NUM_USERS; ++i) {
+            if (users[i].socket == 0) {
+                free_index = i;
+                break;
+            }
+        }
+
+        // Adding user information to an array
+        if (free_index != -1) {
+            users[free_index].socket = user_socket;
+            users[free_index].authenticated = false;
+            ++num_clients;
+
+            // Get user IP address
+            char user_ip[INET_ADDRSTRLEN];
+            inet_ntop(AF_INET, &user_address.sin_addr, user_ip, INET_ADDRSTRLEN);
+
+            // Start a new thread to handle client connection
+            thread user_thread(Handle_Client, user_socket, user_ip);
+            user_thread.detach();
+        } else {
+            Log("Failed to find a free slot for the client.");
+            close(user_socket);
+        }
+    }
+
+    // Close server socket
+    close(server_socket);
+    return 0;
+}
